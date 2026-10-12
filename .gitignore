@@ -1,0 +1,15 @@
+#ignore the envirnment
+venv/
+.venv/
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Build and test artifacts
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
