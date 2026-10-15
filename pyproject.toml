@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 
 [project]
-name = "Data_Science"
+name = "Uni_Projects"
 version = "0.0.1"
 dependencies = ["numpy"]
 
