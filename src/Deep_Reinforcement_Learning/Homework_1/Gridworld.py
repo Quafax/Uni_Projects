@@ -70,6 +70,7 @@ class Gridworld:
 
 if __name__ == "__main__":
     import os
+    import subprocess
 
     env = Gridworld()
     S = env.reset()
@@ -81,7 +82,7 @@ if __name__ == "__main__":
     directions = {"w": 0, "a": 1, "s": 2, "d": 3}
 
     while True:
-        os.system("cls" if os.name == "nt" else "clear")
+        subprocess.run(["cmd", "/c", "cls"] if os.name == "nt" else ["clear"])
 
         env.render()
         print("Return:", G)
