@@ -69,5 +69,36 @@ class Gridworld:
             print()
 
 if __name__ == "__main__":
+    import os
+
     env = Gridworld()
+    S = env.reset()
+
+    G = 0
+    gamma = 1
+    t = 0
+
+    directions = {"w": 0, "a": 1, "s": 2, "d": 3}
+
+    while True:
+        os.system("cls" if os.name == "nt" else "clear")
+
+        env.render()
+        print("Return:", G)
+
+        d = input("Enter Action (w/a/s/d): ").strip()
+
+        if d not in directions:
+            continue
+
+        A = directions[d]
+        S, R, termination = env.step(A)
+
+        G += gamma ** t * R
+        t += 1
+
+        if termination:
+            break
+
     env.render()
+    print("Final Return:", G)
