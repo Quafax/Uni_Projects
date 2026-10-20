@@ -1,3 +1,7 @@
+import os
+import subprocess
+
+
 class Gridworld:
     def __init__(self):
         self.grid = [
@@ -68,38 +72,47 @@ class Gridworld:
 
             print()
 
+    def save_states(self):
+        states = []
+        for row in range(len(self.grid)):
+            for col in range(len(self.grid[row])):
+                if self.grid[row][col] != "#":
+                    states.append((row, col))
+        return states
+    
+    def play_gridworld(self):
+        self.reset()
+
+        total_return = 0
+        gamma = 1
+        t = 0
+
+        directions = {"w": 0, "a": 1, "s": 2, "d": 3}
+
+        while not self.terminated:
+            subprocess.run(
+                ["cmd", "/c", "cls"] if os.name == "nt" else ["clear"]
+            )
+
+            self.render()
+            print("Return:", total_return)
+
+            direction = input("Enter Action (w/a/s/d): ").strip()
+            if direction not in directions:
+                continue
+
+            _, reward, termination = self.step(directions[direction])
+            total_return += gamma**t * reward
+            t += 1
+
+            if termination:
+                break
+
+        self.render()
+        print("Final Return:", total_return)
+
 if __name__ == "__main__":
-    import os
-    import subprocess
-
-    env = Gridworld()
-    S = env.reset()
-
-    G = 0
-    gamma = 1
-    t = 0
-
-    directions = {"w": 0, "a": 1, "s": 2, "d": 3}
-
-    while True:
-        subprocess.run(["cmd", "/c", "cls"] if os.name == "nt" else ["clear"])
-
-        env.render()
-        print("Return:", G)
-
-        d = input("Enter Action (w/a/s/d): ").strip()
-
-        if d not in directions:
-            continue
-
-        A = directions[d]
-        S, R, termination = env.step(A)
-
-        G += gamma ** t * R
-        t += 1
-
-        if termination:
-            break
-
-    env.render()
-    print("Final Return:", G)
+    env=Gridworld()
+    #env.play_gridworld()
+    save_states = env.save_states()
+    print("States saved:", save_states)
