@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "Uni_Projects"
 version = "0.0.1"
-dependencies = ["numpy", "scipy","pandas","matplotlib"]
+dependencies = ["numpy", "scipy","pandas","matplotlib","mempyguts[pymob] @ git+https://gitlab.uni-osnabrueck.de/memuos/mempyguts.git@61-mempy-fit-not-compatible-with-some-models"]
 
 
 [tool.setuptools]
