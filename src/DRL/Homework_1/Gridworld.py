@@ -181,7 +181,7 @@ class Gridworld:
     
 if __name__ == "__main__":
     env=Gridworld()
-    #env.play_gridworld()
+    env.play_gridworld()
     #save_states = env.save_states()
     #print("States saved:", save_states, "Total states:", len(save_states))
 
