@@ -25,7 +25,21 @@ def epsilon_greedy(state, actions, epsilon, Q):
 #same liek in mc, if values are same, it will always give the first action, maybe should give random then
         return max(actions, key=lambda a: Q[state, a])
 
+#same as in mc but update q values  after steps not episode. For q update we need alpha nd gamma
+def generate_episode_q_learning(env, actions, Q, epsilon, alpha, gamma):
+    state = env.reset()
+    terminated = False
 
+    while not terminated:
+        action = epsilon_greedy(state, actions, epsilon, Q)
+        next_state, reward, terminated = env.step(action)
+
+        #Add q update
+        state = next_state
 
 if __name__ == "__main__":
     env = Gridworld()
+    actions = [0, 1, 2, 3]
+
+    state = env.reset()
+    print("Startzustand:", state)
