@@ -112,8 +112,8 @@ class Gridworld:
         cell = self.grid[row][col]
 
         rewards = {
-            ".": 0,
-            "S": 0,
+            ".": -0.05,
+            "S": -0.05,
             "G": 1,
             "D": -1,
             "M": -0.1

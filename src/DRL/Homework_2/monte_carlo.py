@@ -24,8 +24,9 @@ def generate_episode(env, actions, epsilon):
     state = env.reset()
     episode = []
     terminated = False
+    max_steps=0
 
-    while not terminated:
+    while not terminated and max_steps<1000:
         action = epsilon_greedy(state, actions, epsilon)
         next_state, reward, terminated = env.step(action)
 
@@ -37,9 +38,12 @@ def generate_episode(env, actions, epsilon):
         episode.append((state, action, reward))
         state = next_state
 
+        #had to implemetn max steps. Sarsa struggelt with finishing bec it hid in a corner
+        max_steps +=1
+
     return episode
 
-def calc_ret(episode, gamma):
+def calc_reward(episode, gamma):
     G = 0
     returns = []
     for _, _, reward in reversed(episode):
@@ -67,7 +71,7 @@ def train(env, actions, num_episodes=1000, epsilon=0.1, gamma=0.9):
         #generate episode
         ep = generate_episode(env, actions, epsilon)
         #calc returns
-        ep_returns = calc_ret(ep, gamma)
+        ep_returns = calc_reward(ep, gamma)
         #update Q
         update_q(ep, ep_returns)
 
@@ -77,7 +81,7 @@ def show_agent(env, actions):
     terminated = False
     #render first state
     env.render()
-
+    max_steps=0
     while not terminated:
     #trust the program that its not infinte :D could do max steps if it loops
         time.sleep(1)
@@ -93,12 +97,12 @@ def show_agent(env, actions):
 
 def save_q():
     #save it in same folder as this file
-    q_path = Path(__file__).resolve().parent / "q-function-mc.pkl"
+    q_path = Path(__file__).resolve().parent / "mc_q.pkl"
     with open(q_path, "wb") as file:
         pickle.dump(dict(Q), file)
 
 def load_q():
-    q_path = Path(__file__).resolve().parent / "q-function-mc.pkl"
+    q_path = Path(__file__).resolve().parent / "mc_q.pkl"
     if q_path.exists():
         with open(q_path, "rb") as file:
             loaded_q = pickle.load(file)
@@ -121,13 +125,13 @@ if __name__ == "__main__":
     num_episodes = 1000
 
     #train it
-    train(env, actions, num_episodes=num_episodes, epsilon=epsilon, gamma=gamma)
+    #train(env, actions, num_episodes=num_episodes, epsilon=epsilon, gamma=gamma)
 
     #speicher das mit einer gurke
-    save_q()
+    #save_q()
 
     #lade das mit gurke
-    #load_q()
+    load_q()
 
     #show the policy rendered
     show_agent(env, actions)

@@ -6,6 +6,14 @@ import subprocess
 import pickle
 import time
 from pathlib import Path
+import matplotlib.pyplot as plt
+
+#########################################################
+#here are the functions taht work for both trianing algorrithms
+#########################################################
+
+
+
 
 #Q und return dic bec we want to have different Q and return values for q_learning and sarsa
 Q_dict = {
@@ -21,25 +29,204 @@ Returns_dict = {
 def epsilon_greedy(state, actions, epsilon, Q):
     if np.random.random() < epsilon:
         return np.random.choice(actions)
-    else:
-#same liek in mc, if values are same, it will always give the first action, maybe should give random then
-        return max(actions, key=lambda a: Q[state, a])
 
-#same as in mc but update q values  after steps not episode. For q update we need alpha nd gamma
-def generate_episode_q_learning(env, actions, Q, epsilon, alpha, gamma):
+#need to use a random action if they have the same value, bec otherwise the first action alwys choosen. then the model runs into a wall permamently.
+    best_value = max(Q[state, a] for a in actions)
+
+#get all best actions, short verion of appending it if its the best value for every action
+    best_actions = [a for a in actions if Q[state, a] == best_value]
+#return random best action
+    return np.random.choice(best_actions)
+
+#only one train, bec i can give which special train func. 
+def train(env, actions, Q, episode_function, num_episodes=1000, epsilon=0.1, alpha=0.1, gamma=0.9):
+    #for plotting
+    Gs = []
+
+#go through all numbers of episodes
+    for _ in range(num_episodes):
+        #train it. G is only for plottign
+        G = episode_function(env, actions, Q, epsilon, alpha, gamma)
+        Gs.append(G)
+
+    return Gs
+
+#same as in mc, give Q as a param bec we have differnet learning methods
+def show_agent(env, actions, Q):
     state = env.reset()
     terminated = False
+    env.render()
 
     while not terminated:
+        time.sleep(1)
+
+        action = max(actions, key=lambda a: Q[state, a])
+        state, reward, terminated = env.step(action)
+
+        subprocess.run(["cmd", "/c", "cls"] if os.name == "nt" else ["clear"])
+        env.render()
+
+    print("Episode finshed. Last reward:", reward)
+
+#both save and load use "sarsa" or "q_learning" "
+def save_q(algorithm):
+    #has to use "sarsa" or "q_learning"
+    if algorithm not in Q_dict:
+        raise ValueError("Invalid algorithm. Use 'sarsa' or 'q_learning'")
+
+    
+    q_path = Path(__file__).resolve().parent / f"{algorithm}_q.pkl"
+
+    with open(q_path, "wb") as file:
+        pickle.dump(dict(Q_dict[algorithm]), file)
+
+
+def load_q(algorithm):
+        #has to use "sarsa" or "q_learning"
+    if algorithm not in Q_dict:
+        raise ValueError("Invalid algorithm. Use 'sarsa' or 'q_learning'")
+
+
+    q_path = Path(__file__).resolve().parent / f"{algorithm}_q.pkl"
+
+    with open(q_path, "rb") as file:
+        saved_q = pickle.load(file)
+
+    Q_dict[algorithm].clear()
+    Q_dict[algorithm].update(saved_q)
+
+
+
+
+###########################################
+#here start die specific functioons for the different algorithsm
+############################################
+
+
+
+#####q-learning functions
+
+#train one episode, similar to mc but we update q
+def train_q_learning_episode(env, actions, Q, epsilon, alpha, gamma):
+    state = env.reset()
+    #initialisiere variables
+    terminated = False
+    G=0
+    t=0
+
+#still could be a infinte loop and could use maxsteps 
+    while not terminated and t<1000:
         action = epsilon_greedy(state, actions, epsilon, Q)
         next_state, reward, terminated = env.step(action)
 
-        #Add q update
+        #Add q update. Thats the difference to mc, we update q after each step not after the whole episode
+        update_q_learning(state, action, reward, next_state, terminated, actions, Q, alpha, gamma)
         state = next_state
+
+        #calculate return, dont need it, only for plot
+        G += gamma ** t * reward
+        t += 1
+    return G
+
+#update q function, just basic not like in mc for a whole episode. Thats why we check teminated
+def update_q_learning(state, action, reward, next_state, terminated, actions, Q, alpha, gamma):
+    if terminated:
+        target = reward
+    else:
+        next_value = max(Q[next_state, a] for a in actions)
+        target = reward + gamma * next_value
+
+    Q[state, action] += alpha * (target - Q[state, action])
+
+
+####sarsa functions
+def train_sarsa_episode(env, actions, Q, epsilon, alpha, gamma):
+    state = env.reset()
+    terminated = False
+    G = 0
+    t = 0
+#calculate action first, bec we need it for the first step. then we can use it in the loop and calculate the next action at the end of the loop
+    action = epsilon_greedy(state, actions, epsilon, Q)
+
+    while not terminated and t<1000:
+        #needed the t bec on my gridworld sarsa gets stuck bec its rather stuck in a safe field than go to the goal
+        next_state, reward, terminated = env.step(action)
+
+        if terminated:
+    #need that to stop bec we dont calc next 
+            next_action = None
+        else:
+            #get next action if not terminated
+            next_action = epsilon_greedy(next_state, actions, epsilon, Q )
+
+        update_sarsa(state, action, reward, next_state, next_action,terminated, Q, alpha, gamma)
+
+        G += gamma ** t * reward
+        t += 1
+
+        state = next_state
+        action = next_action
+
+    return G
+
+def update_sarsa(state, action, reward, next_state, next_action,terminated, Q, alpha, gamma):
+    if terminated:
+        target = reward
+    else:
+        next_value = Q[next_state, next_action]
+        target = reward + gamma * next_value
+
+    Q[state, action] += alpha * (target - Q[state, action])
+
 
 if __name__ == "__main__":
     env = Gridworld()
     actions = [0, 1, 2, 3]
+    #learning rate
+    alpha = 0.1
+    #adhd meter :D
+    gamma = 0.9
+    #random choice
+    epsilon = 0.2
+    #how long do we trian
+    num_episodes = 1000
+    #Which dict
+    algorithm = "q_learning"
+    #which function to use
+    if algorithm == "q_learning":
+        episode_function = train_q_learning_episode
+    elif algorithm == "sarsa":
+        episode_function = train_sarsa_episode
+    else:
+        raise ValueError("Invalid algorithm. Use 'sarsa' or 'q_learning'")    
 
-    state = env.reset()
-    print("Startzustand:", state)
+
+
+    #train and get the returns for plotting
+    #Gs = train(env,actions,Q=Q_dict[algorithm],episode_function=episode_function,num_episodes=num_episodes,alpha=alpha,epsilon=epsilon,gamma=gamma)
+
+    ###################
+    #interesting thing! Had to give the gridworld a penalty for steps bec sarsa was always running into the wall.
+    #It wanted to evade the little negativ reward to get to the goal
+    """
+    episode_functions = {
+        "q_learning": train_q_learning_episode,
+        "sarsa": train_sarsa_episode}
+
+    Gs_dict = {}
+
+    for algorithm, episode_function in episode_functions.items():
+        Gs_dict[algorithm] = train(env,actions,Q_dict[algorithm],episode_function,num_episodes=num_episodes,epsilon=epsilon,alpha=alpha,gamma=gamma)
+
+        save_q(algorithm)
+
+    for algorithm, Gs in Gs_dict.items():
+        episodes = range(1, len(Gs) + 1)
+        plt.plot(episodes, Gs, label=algorithm)
+
+    plt.legend()
+    plt.show()  
+    """
+    #save_q(algorithm)
+    load_q(algorithm)
+    show_agent(env, actions, Q_dict[algorithm])
