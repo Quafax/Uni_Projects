@@ -11,13 +11,15 @@ from pathlib import Path
 Q = defaultdict(lambda: 0)
 Returns = defaultdict(lambda: [])
 
-# epsilon greedy policy
+# epsilon greedy policy with randomised best actions
 def epsilon_greedy(state, actions, epsilon):
     if np.random.random() < epsilon:
         return np.random.choice(actions)
-    else:
-    #this is always giving the first action if values are same, maybe should give random then
-        return max(actions, key=lambda a: Q[state, a])
+
+    best_value = max(Q[state, a] for a in actions)
+    best_actions = [a for a in actions if Q[state, a] == best_value]
+
+    return np.random.choice(best_actions)
 
 #here the function for the epsilon greedy policy for 1 episode. could do it so it wokrs for different functions
 def generate_episode(env, actions, epsilon):
@@ -86,7 +88,7 @@ def show_agent(env, actions):
     #trust the program that its not infinte :D could do max steps if it loops
         time.sleep(1)
 
-        action = max(actions, key=lambda a: Q[state, a])
+        action = epsilon_greedy(state, actions, epsilon=0.0)
         state, reward, terminated = env.step(action)
 
 #render new state
@@ -117,7 +119,7 @@ if __name__ == "__main__":
     #define actions, should havedone this in gridwold as self.actions but didnt want to change the homework 1 code
     actions = [0, 1, 2, 3]
     #probablity of exploration so greedy policy doesnt get stuck
-    epsilon = 0.1
+    epsilon = 0.2
     #gamma for retunr
     gamma = 0.9
     #number of episodes it shall train for

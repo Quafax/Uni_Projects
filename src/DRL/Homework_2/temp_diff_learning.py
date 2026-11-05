@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 
 #Q und return dic bec we want to have different Q and return values for q_learning and sarsa
 Q_dict = {
-    "q_learning": defaultdict(lambda: 0),
-    "sarsa": defaultdict(lambda: 0)
+    "q_learning": defaultdict(lambda: 1),
+    "sarsa": defaultdict(lambda: 1)
 }
 Returns_dict = {
     "q_learning": defaultdict(lambda: []),
@@ -43,10 +43,19 @@ def train(env, actions, Q, episode_function, num_episodes=1000, epsilon=0.1, alp
     #for plotting
     Gs = []
 
-#go through all numbers of episodes
-    for _ in range(num_episodes):
-        #train it. G is only for plottign
-        G = episode_function(env, actions, Q, epsilon, alpha, gamma)
+    #go through all numbers of episodes
+    for episode in range(num_episodes):
+        # decide which episode you want to see. care episode start with 0, so 0 ist first episode
+        render = episode in (0, 9, 49, 199, 999)
+        render = False
+
+        #print the episode
+        if render:
+            print(f"Training episode {episode + 1}")
+            time.sleep(1)
+
+        #calc G from episode and maybe render
+        G = episode_function(env, actions, Q, epsilon, alpha, gamma,render=render)
         Gs.append(G)
 
     return Gs
@@ -107,7 +116,7 @@ def load_q(algorithm):
 #####q-learning functions
 
 #train one episode, similar to mc but we update q
-def train_q_learning_episode(env, actions, Q, epsilon, alpha, gamma):
+def train_q_learning_episode(env, actions, Q, epsilon, alpha, gamma, render=False):
     state = env.reset()
     #initialisiere variables
     terminated = False
@@ -118,6 +127,11 @@ def train_q_learning_episode(env, actions, Q, epsilon, alpha, gamma):
     while not terminated and t<1000:
         action = epsilon_greedy(state, actions, epsilon, Q)
         next_state, reward, terminated = env.step(action)
+        #if rendering is true, render the grid while training
+        if render:
+            subprocess.run(["cmd", "/c", "cls"] if os.name == "nt" else ["clear"])
+            env.render()
+            time.sleep(0.1)
 
         #Add q update. Thats the difference to mc, we update q after each step not after the whole episode
         update_q_learning(state, action, reward, next_state, terminated, actions, Q, alpha, gamma)
@@ -140,7 +154,7 @@ def update_q_learning(state, action, reward, next_state, terminated, actions, Q,
 
 
 ####sarsa functions
-def train_sarsa_episode(env, actions, Q, epsilon, alpha, gamma):
+def train_sarsa_episode(env, actions, Q, epsilon, alpha, gamma, render=False):
     state = env.reset()
     terminated = False
     G = 0
@@ -151,6 +165,12 @@ def train_sarsa_episode(env, actions, Q, epsilon, alpha, gamma):
     while not terminated and t<1000:
         #needed the t bec on my gridworld sarsa gets stuck bec its rather stuck in a safe field than go to the goal
         next_state, reward, terminated = env.step(action)
+        #if rendering is true, render the grid while training
+        if render:
+            subprocess.run(["cmd", "/c", "cls"] if os.name == "nt" else ["clear"])
+            env.render()
+            time.sleep(0.1)
+
 
         if terminated:
     #need that to stop bec we dont calc next 
@@ -178,6 +198,18 @@ def update_sarsa(state, action, reward, next_state, next_action,terminated, Q, a
 
     Q[state, action] += alpha * (target - Q[state, action])
 
+def exp_smooth(Gs, mix=0.05):
+    if not Gs:
+        return []
+
+    avg_G = Gs[0]
+    smoothed_Gs = []
+
+    for G in Gs:
+        avg_G = mix * G + (1 - mix) * avg_G
+        smoothed_Gs.append(avg_G)
+
+    return smoothed_Gs
 
 if __name__ == "__main__":
     env = Gridworld()
@@ -187,46 +219,51 @@ if __name__ == "__main__":
     #adhd meter :D
     gamma = 0.9
     #random choice
-    epsilon = 0.2
+    epsilon = 0.1
     #how long do we trian
     num_episodes = 1000
-    #Which dict
-    algorithm = "q_learning"
-    #which function to use
-    if algorithm == "q_learning":
-        episode_function = train_q_learning_episode
-    elif algorithm == "sarsa":
-        episode_function = train_sarsa_episode
-    else:
-        raise ValueError("Invalid algorithm. Use 'sarsa' or 'q_learning'")    
-
-
-
-    #train and get the returns for plotting
-    #Gs = train(env,actions,Q=Q_dict[algorithm],episode_function=episode_function,num_episodes=num_episodes,alpha=alpha,epsilon=epsilon,gamma=gamma)
-
-    ###################
-    #interesting thing! Had to give the gridworld a penalty for steps bec sarsa was always running into the wall.
-    #It wanted to evade the little negativ reward to get to the goal
-    """
+    #dictionary for the Gs
+    Gs_dict = {}
+    #dictionary for the algorithms and functiions
     episode_functions = {
         "q_learning": train_q_learning_episode,
         "sarsa": train_sarsa_episode}
 
-    Gs_dict = {}
 
+    """
+    
+   ###########################################train and get the returns for plotting 
     for algorithm, episode_function in episode_functions.items():
         Gs_dict[algorithm] = train(env,actions,Q_dict[algorithm],episode_function,num_episodes=num_episodes,epsilon=epsilon,alpha=alpha,gamma=gamma)
 
         save_q(algorithm)
+        
+    ###################
+    #interesting thing! Had to give the gridworld a penalty for steps bec sarsa was always running into the wall.
+    #It wanted to evade the little negativ reward to get to the goal
+    #could solve that by a postive stating Q like all 1. so a wall gives 0 and then it would work too
+    ###################
 
+    ################################################plotting
     for algorithm, Gs in Gs_dict.items():
         episodes = range(1, len(Gs) + 1)
-        plt.plot(episodes, Gs, label=algorithm)
 
+        line, = plt.plot(episodes, exp_smooth(Gs), label=algorithm)
+
+        #show not smoothed values
+        plt.plot(episodes, Gs,color=line.get_color(), alpha=0.15)
+
+    plt.xlabel("Episode")
+    plt.ylabel("Return G₀")
+    plt.title("Q-Learning and SARSA")
     plt.legend()
-    plt.show()  
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(Path(__file__).resolve().parent / "training_returns.png",dpi=300, bbox_inches="tight")
+    plt.show()
     """
-    #save_q(algorithm)
+
+    ########################### can show the working policy
+    algorithm = "sarsa"  #or "q_learning"
     load_q(algorithm)
     show_agent(env, actions, Q_dict[algorithm])
