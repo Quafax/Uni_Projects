@@ -120,7 +120,7 @@ if __name__ == "__main__":
     actions = [0, 1, 2, 3]
     #probablity of exploration so greedy policy doesnt get stuck
     epsilon = 0.2
-    #gamma for retunr
+    #adhd meter
     gamma = 0.9
     #number of episodes it shall train for
     #1000 are pretty long, test with 100
