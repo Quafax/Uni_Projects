@@ -46,7 +46,7 @@ def train(env, actions, Q, episode_function, num_episodes=1000, epsilon=0.1, alp
     #go through all numbers of episodes
     for episode in range(num_episodes):
         # decide which episode you want to see. care episode start with 0, so 0 ist first episode
-        render = episode in (0, 9, 49, 199, 999)
+        render = episode in ()
         render = False
 
         #print the episode
@@ -229,8 +229,8 @@ if __name__ == "__main__":
         "q_learning": train_q_learning_episode,
         "sarsa": train_sarsa_episode}
 
-
     """
+    
     
    ###########################################train and get the returns for plotting 
     for algorithm, episode_function in episode_functions.items():
@@ -261,9 +261,9 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(Path(__file__).resolve().parent / "training_returns.png",dpi=300, bbox_inches="tight")
     plt.show()
-    """
+    #"""
 
     ########################### can show the working policy
-    algorithm = "sarsa"  #or "q_learning"
+    algorithm = "q_learning"  #or "q_learning"
     load_q(algorithm)
     show_agent(env, actions, Q_dict[algorithm])

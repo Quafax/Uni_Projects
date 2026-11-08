@@ -127,13 +127,13 @@ if __name__ == "__main__":
     num_episodes = 1000
 
     #train it
-    #train(env, actions, num_episodes=num_episodes, epsilon=epsilon, gamma=gamma)
+    train(env, actions, num_episodes=num_episodes, epsilon=epsilon, gamma=gamma)
 
     #speicher das mit einer gurke
-    #save_q()
+    save_q()
 
     #lade das mit gurke
-    load_q()
+    #load_q()
 
     #show the policy rendered
     show_agent(env, actions)
